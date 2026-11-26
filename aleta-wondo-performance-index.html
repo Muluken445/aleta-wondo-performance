@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aleta Wondo | Performance Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--orange:#e87524;--navy:#17324d;--ink:#17212b;--muted:#64748b;--line:#e5eaf0;--bg:#f4f6f8;--white:#fff;--green:#16845b;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--navy);color:white;padding:18px 20px;display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:10px;background:var(--orange);display:grid;place-items:center;font-weight:800;font-size:20px}
+header h1{font-size:17px;margin:0}header p{margin:3px 0 0;color:#d9e3ec;font-size:12px}
+main{max-width:1100px;margin:24px auto;padding:0 14px}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px #1525360a}
+.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:12px}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+h2{font-size:19px;margin:0 0 14px}h3{font-size:15px;margin:0 0 10px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}
+input,select{width:100%;padding:11px 12px;border:1px solid #cfd8e3;border-radius:9px;font:inherit;background:white}
+button{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer;background:var(--orange);color:white}
+button.secondary{background:#eaf0f5;color:var(--navy)}button.danger{background:#fff0ef;color:var(--red)}
+button:disabled{opacity:.55;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stat{padding:14px;border-radius:11px;background:#f5f8fb;border:1px solid var(--line)}.stat strong{font-size:23px;display:block}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.tabs button{background:#eaf0f5;color:var(--navy)}.tabs button.active{background:var(--navy);color:white}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:700}
+.tablewrap{overflow-x:auto}.notice{padding:11px 13px;border-radius:9px;background:#fff7ed;color:#854d0e;margin:10px 0;font-size:13px}
+.success{color:var(--green)}.error{color:var(--red)}.status{font-size:13px;margin-top:10px;min-height:18px}
+@media(max-width:620px){main{margin:14px auto}.panel{padding:15px}.grid{grid-template-columns:1fr}header{padding:14px}header h1{font-size:15px}}
+</style>
+</head>
+<body>
+<header><div class="logo">W</div><div><h1>Wegagen Bank · Aleta Wondo Branch</h1><p>Performance Management System</p></div></header>
+<main>
+<section id="setup" class="panel">
+<h2>Connect your branch system</h2>
+<p class="muted">Enter your Supabase Project URL and Publishable key. These are browser-safe connection details. Never enter a Secret or service-role key here.</p>
+<div class="grid">
+<div><label for="projectUrl">Supabase Project URL</label><input id="projectUrl" placeholder="https://your-project.supabase.co" autocomplete="url"></div>
+<div><label for="publicKey">Supabase Publishable key</label><input id="publicKey" placeholder="sb_publishable_..." autocomplete="off"></div>
+</div>
+<div class="row" style="margin-top:14px"><button id="connectBtn">Connect</button><span class="small muted">Saved only in this browser.</span></div>
+<div id="setupMsg" class="status"></div>
+</section>
+
+<section id="login" class="panel hidden">
+<h2>Sign in</h2><p class="muted">Use the email and password assigned to your branch account.</p>
+<label for="email">Email address</label><input id="email" type="email" autocomplete="username">
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
+<div class="row" style="margin-top:14px"><button id="loginBtn">Sign in</button></div><div id="loginMsg" class="status"></div>
+</section>
+
+<section id="app" class="hidden">
+<div class="panel row between">
+<div><h2 id="welcome">Welcome</h2><div id="roleLine" class="muted small"></div></div>
+<button class="secondary" id="logoutBtn">Sign out</button>
+</div>
+<div class="tabs">
+<button class="active" data-tab="overview">Overview</button>
+<button data-tab="entry">Submit performance</button>
+<button data-tab="targets" id="targetsTab">Branch targets</button>
+<button data-tab="team" id="teamTab">Team records</button>
+</div>
+<section id="tab-overview" class="panel">
+<h2>Performance overview</h2>
+<div class="grid">
+<div class="stat"><span class="muted small">Performance entries</span><strong id="entryCount">0</strong></div>
+<div class="stat"><span class="muted small">Team members</span><strong id="staffCount">—</strong></div>
+</div>
+<p class="muted small" id="overviewHint" style="margin-top:14px">Your submitted performance records appear here.</p>
+</section>
+<section id="tab-entry" class="panel hidden">
+<h2>Submit performance</h2>
+<div class="grid">
+<div><label for="kpi">KPI</label><select id="kpi"><option>Deposit</option><option>New Customer</option><option>Card Banking</option><option>Mobile Banking</option><option>Wallet</option><option>Agent</option><option>Merchant</option></select></div>
+<div><label for="cadence">Reporting period</label><select id="cadence"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+<div><label for="periodDate">Period date</label><input id="periodDate" type="date"></div>
+<div><label for="actual">Actual achievement</label><input id="actual" type="number" min="0" step="any" placeholder="Enter actual result"></div>
+<div><label for="entryTarget">Target for this period</label><input id="entryTarget" type="number" min="0" step="any" placeholder="Enter target"></div>
+</div>
+<div class="row" style="margin-top:14px"><button id="saveEntryBtn">Save performance</button></div><div id="entryMsg" class="status"></div>
+<p class="muted small">Use the same unit for target and actual (for example, ETB for deposit or number of customers for customer KPIs).</p>
+</section>
+<section id="tab-targets" class="panel hidden">
+<h2>Set monthly branch targets</h2>
+<p class="muted small">Only the manager can save branch targets.</p>
+<div class="grid">
+<div><label for="targetKpi">KPI</label><select id="targetKpi"><option>Deposit</option><option>New Customer</option><option>Card Banking</option><option>Mobile Banking</option><option>Wallet</option><option>Agent</option><option>Merchant</option></select></div>
+<div><label for="targetMonth">Month</label><input id="targetMonth" type="month"></div>
+<div><label for="branchTarget">Monthly target</label><input id="branchTarget" type="number" min="0" step="any"></div>
+</div>
+<div class="row" style="margin-top:14px"><button id="saveTargetBtn">Save branch target</button></div><div id="targetMsg" class="status"></div>
+</section>
+<section id="tab-team" class="panel hidden">
+<h2 id="recordsHeading">Performance records</h2>
+<div class="tablewrap"><table><thead><tr><th>Staff</th><th>KPI</th><th>Period</th><th>Target</th><th>Actual</th><th>Submitted</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+<div id="recordsMsg" class="status"></div>
+</section>
+</section>
+</main>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const keys = {url:'aleta_supabase_url',key:'aleta_supabase_key'};
+let client=null, user=null, profile=null, isManager=false, entries=[], profiles=[];
+const kpis=['Deposit','New Customer','Card Banking','Mobile Banking','Wallet','Agent','Merchant'];
+function msg(id,text,kind=''){const el=$(id);el.textContent=text;el.className='status '+kind;}
+function today(){return new Date().toISOString().slice(0,10);}
+function monthStart(date){return date.slice(0,7)+'-01';}
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
+function switchTab(name){
+ document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ ['overview','entry','targets','team'].forEach(t=>$(('tab-'+t)).classList.toggle('hidden',t!==name));
+}
+function connect(){
+ const url=$('projectUrl').value.trim(), key=$('publicKey').value.trim();
+ if(!url.startsWith('https://')||!key){msg('setupMsg','Enter a valid Project URL and Publishable key.','error');return;}
+ try{
+  client=window.supabase.createClient(url,key);
+  localStorage.setItem(keys.url,url);localStorage.setItem(keys.key,key);
+  hide('setup');show('login');msg('loginMsg','Connection ready. Sign in with your account.','success');
+ }catch(e){msg('setupMsg',e.message,'error');}
+}
+async function loadClient(){
+ const url=localStorage.getItem(keys.url),key=localStorage.getItem(keys.key);
+ if(url&&key){$('projectUrl').value=url;$('publicKey').value=key;client=window.supabase.createClient(url,key);hide('setup');}
+}
+async function signIn(){
+ msg('loginMsg','Signing in…');
+ const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+ if(error){msg('loginMsg',error.message,'error');return;}
+ user=data.user;await loadProfile();
+}
+async function loadProfile(){
+ const {data,error}=await client.from('profiles').select('id,full_name,role').eq('id',user.id).single();
+ if(error||!data){msg('loginMsg','Your login exists, but your staff profile could not be loaded. Ask the branch manager to check your profile. '+(error?.message||''),'error');await client.auth.signOut();return;}
+ profile=data;isManager=String(profile.role).toLowerCase()==='manager';
+ $('welcome').textContent='Welcome, '+(profile.full_name||'User');
+ $('roleLine').textContent=isManager?'Branch Manager':'Staff member';
+ $('targetsTab').classList.toggle('hidden',!isManager);$('teamTab').classList.toggle('hidden',!isManager);
+ $('overviewHint').textContent=isManager?'You can monitor submitted performance across the branch.':'Your submitted performance records appear here.';
+ hide('login');show('app');$('periodDate').value=today();$('targetMonth').value=today().slice(0,7);
+ await refreshData();switchTab('overview');
+}
+async function refreshData(){
+ let q=client.from('performance_entries').select('id,user_id,kpi,cadence,period_key,month_start,target,actual,created_at,updated_at').order('created_at',{ascending:false}).limit(500);
+ const {data,error}=await q;
+ if(error){msg('recordsMsg','Could not load records: '+error.message,'error');return;}
+ entries=data||[];$('entryCount').textContent=entries.length;
+ if(isManager){
+  const p=await client.from('profiles').select('id,full_name,role').order('full_name');
+  if(!p.error)profiles=p.data||[];
+  $('staffCount').textContent=profiles.filter(x=>String(x.role).toLowerCase()!=='manager').length;
+  renderRecords();
+ }else{$('staffCount').textContent='—';renderRecords();}
+}
+function renderRecords(){
+ const body=$('recordsBody');body.innerHTML='';
+ const names=new Map(profiles.map(p=>[p.id,p.full_name||'Staff']));
+ entries.forEach(e=>{
+  const tr=document.createElement('tr');
+  const vals=[isManager?(names.get(e.user_id)||'Staff'):profile.full_name,e.kpi,e.cadence+' · '+e.period_key,e.target,e.actual,(e.created_at||'').slice(0,10)];
+  vals.forEach(v=>{const td=document.createElement('td');td.textContent=v??'—';tr.appendChild(td);});body.appendChild(tr);
+ });
+ if(!entries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent='No performance entries yet.';tr.appendChild(td);body.appendChild(tr);}
+ $('recordsHeading').textContent=isManager?'All staff performance records':'My performance records';
+}
+async function saveEntry(){
+ const date=$('periodDate').value,actual=Number($('actual').value),target=Number($('entryTarget').value);
+ if(!date||$('actual').value===''||$('entryTarget').value===''){msg('entryMsg','Please enter the period date, target and actual.','error');return;}
+ if(actual<0||target<0){msg('entryMsg','Target and actual cannot be negative.','error');return;}
+ const cadence=$('cadence').value;
+ const payload={user_id:user.id,kpi:$('kpi').value,cadence,period_key:date,month_start:monthStart(date),target,actual,updated_at:new Date().toISOString()};
+ const {error}=await client.from('performance_entries').insert(payload);
+ if(error){msg('entryMsg','Could not save: '+error.message,'error');return;}
+ msg('entryMsg','Performance saved successfully.','success');$('actual').value='';$('entryTarget').value='';await refreshData();
+}
+async function saveTarget(){
+ if(!isManager)return;
+ const month=$('targetMonth').value;
+ if(!month||$('branchTarget').value===''){msg('targetMsg','Choose a month and enter a target.','error');return;}
+ const kpi=$('targetKpi').value,month_start=month+'-01',target=Number($('branchTarget').value);
+ if(target<0){msg('targetMsg','Target cannot be negative.','error');return;}
+ const found=await client.from('branch_targets').select('id').eq('kpi',kpi).eq('month_start',month_start).maybeSingle();
+ if(found.error){msg('targetMsg','Could not check existing target: '+found.error.message,'error');return;}
+ let result;
+ if(found.data){result=await client.from('branch_targets').update({target,updated_by:user.id,updated_at:new Date().toISOString()}).eq('id',found.data.id);}
+ else{result=await client.from('branch_targets').insert({kpi,month_start,target,updated_by:user.id,updated_at:new Date().toISOString()});}
+ if(result.error){msg('targetMsg','Could not save target: '+result.error.message,'error');return;}
+ msg('targetMsg','Branch target saved.','success');$('branchTarget').value='';
+}
+async function signOut(){await client.auth.signOut();user=null;profile=null;hide('app');show('login');$('password').value='';}
+$('connectBtn').addEventListener('click',connect);$('loginBtn').addEventListener('click',signIn);
+$('saveEntryBtn').addEventListener('click',saveEntry);$('saveTargetBtn').addEventListener('click',saveTarget);$('logoutBtn').addEventListener('click',signOut);
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+$('password').addEventListener('keydown',e=>{if(e.key==='Enter')signIn();});
+$('periodDate').value=today();$('targetMonth').value=today().slice(0,7);
+loadClient();
+})();
+</script>
+</body>
+</html>
